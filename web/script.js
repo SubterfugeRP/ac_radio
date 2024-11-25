@@ -1,4 +1,5 @@
 let settingPreset = false;
+const channelInput = document.getElementById("radio-channel");
 
 const sendNuiEvent = (name, data, callback) => {
 	$.post(`https://ac_radio/${name}`, JSON.stringify(data), callback);
@@ -27,6 +28,14 @@ window.addEventListener('message', (event) => {
 		setLocale(data);
 	} else if (action == 'closeUi') {
 		closeUi();
+	} else if (action == 'volume') {
+		document.getElementById("volume").innerHTML = data + "%"
+	} else if (action == 'mute') {
+		document.getElementById("is-not-muted").style.display = "none"
+		document.getElementById("is-muted").style.display = "block"
+	} else if (action == 'unmute') {
+		document.getElementById("is-muted").style.display = "none"
+		document.getElementById("is-not-muted").style.display = "block"
 	}
 });
 
@@ -50,7 +59,22 @@ window.addEventListener('keyup', (key) => {
 	};
 });
 
+channelInput.addEventListener("keyup", function () {
+	var channel = channelInput.value;
+	if (channel.length) {
+		// check if there is more than 3 decimals
+		var decimals = channel.split(".")[1];
+		if (decimals && decimals.length > 3) {
+			var channel = parseFloat(channel).toFixed(3);
+			channelInput.value = channel;
+		}
+	}
+})
 
+const enableVolumeAndMute = (show) => {
+	document.getElementById("volume").style.opacity = show ? 1 : 0
+	document.querySelector(".mute-status").style.opacity = show ? 1 : 0
+}
 
 // radio control functions
 const toggleRadio = (join) => {
@@ -59,9 +83,11 @@ const toggleRadio = (join) => {
 		sendNuiEvent('joinFrequency', frequency, (frequency) => {
 			$('#radio-channel').val(frequency || '');
 		});
+		enableVolumeAndMute(true)
 	} else if (!join) {
 		sendNuiEvent('leaveFrequency');
 		$('#radio-channel').val('');
+		enableVolumeAndMute(false)
 	}
 }
 
@@ -72,6 +98,7 @@ const presetChannel = (presetId) => {
 	} else {
 		sendNuiEvent('presetJoin', presetId, (frequency) => {
 			$('#radio-channel').val(frequency || '');
+			enableVolumeAndMute(true)
 		});
 	}
 }
@@ -83,3 +110,5 @@ const setPreset = () => {
 		settingPreset = true;
 	}
 }
+
+sendNuiEvent('ready');
